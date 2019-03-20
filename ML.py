@@ -30,10 +30,23 @@ from sklearn.metrics import roc_curve #Remember to send the SVC.decision_functio
 ## Import, clean, prepare the data, look at the correlations
     ## This is the point we're we'd be creating the "Busy-ness" feature
 
+database = pd.read_csv("database.csv")
+print(database)
+#Call the weird pandas thing that categorizes things.
+
+pipe = Pipeline([ ('imputer', Imputer( strategy ="median")),
+                         ('std_scaler', StandardScaler()),
+                         (' selector', pd.DataFrameSelector( cat_attribs)),
+                         (' cat_encoder', CategoricalEncoder( encoding =" onehot-dense")), ])
+X_train = pipe.fit_transform(X_train)
+X_test = pipe.transform(X_test)
+
 
 ##Classification algorithm
     ##Try a linear SVC for a few C
-
+for i in (1,10,100,1000):
+    print(i)
+#Try it in the possible ranges.
 
     ##Kernelize the SVC. We don't know how these work, but we'll try a few different ones and pick the one with the best performance
 
