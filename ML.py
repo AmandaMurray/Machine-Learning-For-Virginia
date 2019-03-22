@@ -31,21 +31,64 @@ from sklearn.metrics import roc_curve #Remember to send the SVC.decision_functio
     ## This is the point we're we'd be creating the "Busy-ness" feature
 
 database = pd.read_csv("database.csv")
-print(database)
-#Call the weird pandas thing that categorizes things.
+#print(database)
+
+#Creating feature that says how many murders were reported in the agency that year
+database['murders_that_year'] = 0
+this_agency = ""
+count = 1
+start_row = 0
+end_row = 0
+'''
+for index, row in database.iterrows():
+    if (this_agency != row['Agency Name']):
+        this_agency = row['Agency Name']
+
+        #iterate from start row to end row and set murders_that_month to count
+        for i in range(start_row-1, end_row+1):
+            database.iloc[i, database.columns.get_loc('murders_that_year')] = count
+
+        count = 1
+        start_row = end_row + 1
+        end_row = end_row +1
+
+    else:
+        count = count +1
+        end_row = end_row +1
+
+database.to_csv('out.csv')
+print("cool")
+#print(database)
+'''
+#Call the weird pandas thing that categorizes things factorize.
+'''
+train_set, test_set = train_test_split(database, test_size = 0.2, random_state = 42)
+X_train = train_set.drop(columns=["Crime Solved"])
+y_train = train_set[['Crime Solved']]
+X_test = test_set.drop(columns=["Crime Solved",])
+y_test = test_set[['Crime Solved']]
 
 pipe = Pipeline([ ('imputer', Imputer( strategy ="median")),
-                         ('std_scaler', StandardScaler()),
-                         (' selector', pd.DataFrameSelector( cat_attribs)),
-                         (' cat_encoder', CategoricalEncoder( encoding =" onehot-dense")), ])
+                         ('std_scaler', StandardScaler()),])
+
 X_train = pipe.fit_transform(X_train)
 X_test = pipe.transform(X_test)
 
-
 ##Classification algorithm
     ##Try a linear SVC for a few C
-for i in (1,10,100,1000):
-    print(i)
+maxScore = 0;
+maxVal = 0;
+for i in (0, 1,10,100,1000):
+    svm_clf = LinearSVC(C=i, loss="hinge", random_state=42, tol=10, max_iter=5000)
+    scores = cross_val_score(svm_clf, X_train, np.ravel(y_train), cv=5, scoring='f1')
+    mean = scores.mean()
+    print(mean)
+    if(mean > maxScore):
+        maxScore = mean
+        maxVal = i
+
+print("The best C value is: " + str(maxVal) + " which gives us a score of: " + str(maxScore))
+'''
 #Try it in the possible ranges.
 
     ##Kernelize the SVC. We don't know how these work, but we'll try a few different ones and pick the one with the best performance
