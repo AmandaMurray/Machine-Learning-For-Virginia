@@ -63,41 +63,52 @@ print("finished")
 #Read in our newly created Database
 database = pd.read_csv('out.csv')
 #print(database)
+database = database.drop(labels=['Agency Name', 'Crime Type'], axis = 1)
+
+#Drop some data to prevent memory errors(RIP our wimpy laptops)
+use, throw_away = train_test_split(database, test_size = 0.75, random_state = 42)
+database = use
+#print(database.shape) #(159613, 10)
+#Fine at this level. Cool
+
 non_cat_labels = ['Victim Age', 'murders_that_year', 'Year']
 database_only_cat = database.drop(labels = non_cat_labels, axis=1)
+#Okay here.
 database_numeric = database[non_cat_labels]
-#print(database_numeric)
-le = LabelEncoder
-oh = OneHotEncoder()
-for label in database_only_cat.columns:
-    database_only_cat[label] = le.fit_transform(y =database_only_cat[label], self= le)
+#Looks good here.
 
-print(database_only_cat)
-for label in database_only_cat.columns:
-    oh.fit_transform(X =(database_only_cat[label].values).reshape(-1,1), handle_unknown='ignore',  self = oh)
-
+pipe = Pipeline([('onehot', OneHotEncoder(sparse = False)),])
+database_only_cat = pipe.fit_transform(database_only_cat) #<<< I cant make this line work
 #print(database_only_cat)
+temp = pd.DataFrame(database_only_cat)
+#print(temp.shape)#(159613, 48)
+#print(temp)
+print(database_numeric)
+print(database_numeric.shape)
+database = pd.concat([temp,database_numeric], axis=1, join="outer", ignore_index = True)
+#i dont think we should ignore the index
+#can we try it with the inner join???
+#Size = (40176, 51)(BAD)dear fucking god, yeah try that
+#Size = ((279050, 51)) STILL BAD, i guess try both?
+# Size = (279050, 51) Still some bad bad-sauce
+#do we have an id column? Numeric has indexes. But no ID Column
+print(database.shape)#(279050, 51)
+database.to_csv('aahhhh.csv') #I'm pushing this CSV.
+#print(database)
 
-
+'''
 #print(database_only_cat)
 #Basic train-set splitting
-train_set, test_set = train_test_split(database, test_size = 0.2, random_state = 42)
+train_set, test_set = train_test_split(database, test_size = 0.2, random_state = 42) #Also we need a way to split this by Virginia vs Not Virginia.
 X_train = train_set.drop(columns=["Crime Solved"])
 y_train = train_set[['Crime Solved']]
 X_test = test_set.drop(columns=["Crime Solved",])
 y_test = test_set[['Crime Solved']]
 
+# pipe =
 
 #Our pipeline.
-'''
-pipe = Pipeline([ ('imputer', Imputer( strategy ="median")),
-                         ('std_scaler', StandardScaler()),])
 
-X_train = pipe.fit_transform(X_train)
-X_test = pipe.transform(X_test)
-
-'''
-'''
 ##Classification algorithm
     ##Try a linear SVC for a few C
 maxScore = 0;
