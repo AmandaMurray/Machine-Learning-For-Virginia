@@ -68,54 +68,51 @@ database = database.drop(labels=['Agency Name', 'Crime Type'], axis = 1)
 #Drop some data to prevent memory errors(RIP our wimpy laptops)
 use, throw_away = train_test_split(database, test_size = 0.75, random_state = 42)
 database = use
-#print(database.shape) #(159613, 10)
-#Fine at this level. Cool
 
+#Seperate the categorical data from the numeric data.
 non_cat_labels = ['Victim Age', 'murders_that_year', 'Year']
 database_only_cat = database.drop(labels = non_cat_labels, axis=1)
-#Okay here.
 database_numeric = database[non_cat_labels]
-#Looks good here.
+y = database['Crime Solved']
+database_only_cat.drop(labels = ['Crime Solved'], axis = 1)
 
+#Use OneHotEncoder to encode Categorical Data.
 pipe = Pipeline([('onehot', OneHotEncoder(sparse = False)),])
 database_only_cat = pipe.fit_transform(database_only_cat) #<<< I cant make this line work
-#print(database_only_cat)
-temp = pd.DataFrame(database_only_cat)
-#print(temp.shape)#(159613, 48)
-#print(temp)
-print(database_numeric)
-print(database_numeric.shape)
-database = pd.concat([temp,database_numeric], axis=1, join="outer", ignore_index = True)
-#i dont think we should ignore the index
-#can we try it with the inner join???
-#Size = (40176, 51)(BAD)dear fucking god, yeah try that
-#Size = ((279050, 51)) STILL BAD, i guess try both?
-# Size = (279050, 51) Still some bad bad-sauce
-#do we have an id column? Numeric has indexes. But no ID Column
-print(database.shape)#(279050, 51)
-database.to_csv('aahhhh.csv') #I'm pushing this CSV.
-#print(database)
 
-'''
-#print(database_only_cat)
+#Use LabelEncoder to create 1s and 0s for yes and nos.
+le = LabelEncoder()
+y = le.fit_transform(y).reshape(-1,1)
+
+#Recombine all of our data sets
+temp = pd.DataFrame(database_only_cat)
+temp2 = pd.DataFrame(database_numeric.values, columns = non_cat_labels)
+
+database = pd.concat([temp,temp2], axis=1)
+temp3 = pd.DataFrame(y, columns = ['Crime Solved'])
+database = pd.concat([database, temp3], axis =1, names = ['x', 'y'])
+
 #Basic train-set splitting
 train_set, test_set = train_test_split(database, test_size = 0.2, random_state = 42) #Also we need a way to split this by Virginia vs Not Virginia.
-X_train = train_set.drop(columns=["Crime Solved"])
+X_train = train_set.drop(columns=['Crime Solved'])
+#print(X_train)
 y_train = train_set[['Crime Solved']]
-X_test = test_set.drop(columns=["Crime Solved",])
+X_test = test_set.drop(columns=['Crime Solved'])
 y_test = test_set[['Crime Solved']]
 
-# pipe =
-
-#Our pipeline.
+#Second Pipeline to Scale
+pipe = Pipeline([('scaler', StandardScaler()),])
+X_train =pipe.fit_transform(X_train)
+X_test = pipe.transform(X_test)
 
 ##Classification algorithm
     ##Try a linear SVC for a few C
 maxScore = 0;
 maxVal = 0;
-for i in (0, 1,10,100,1000):
-    svm_clf = LinearSVC(C=i, loss="hinge", random_state=42, tol=10, max_iter=5000)
-    scores = cross_val_score(svm_clf, X_train, np.ravel(y_train), cv=5, scoring='f1')
+for i in (1,2,3,4,10,100,1000):
+    print(str(i) + "'s Mean Score:")
+    svm_clf = LinearSVC(C=i, loss="hinge", random_state=42, tol=1, max_iter=1000)
+    scores = cross_val_score(svm_clf, X_train, np.ravel(y_train), cv=3, scoring='precision')
     mean = scores.mean()
     print(mean)
     if(mean > maxScore):
@@ -123,7 +120,21 @@ for i in (0, 1,10,100,1000):
         maxVal = i
 
 print("The best C value is: " + str(maxVal) + " which gives us a score of: " + str(maxScore))
-'''
+
+maxScore = 0
+maxGamma = 0
+maxC = 0
+for C, gamma in ((1,1),(1,10),(10,1),(10,10),(100,1),(1,100)):
+    print("I started")
+    rbf_kernel_svm_clf = SVC(kernel="rbf", gamma=gamma, C=C, max_iter=1000)
+    scores = cross_val_score(rbf_kernel_svm_clf, X_train, np.ravel(y_train), cv=3, scoring='f1')
+    print("(" + str(gamma) + " , " +str(C) +")" +"'s Mean Score:")
+    mean = scores.mean()
+    print(mean)
+    if(mean > maxScore):
+        maxScore = mean
+        maxGamma = gamma
+        maxC = C
 #Try it in the possible ranges.
 
     ##Kernelize the SVC. We don't know how these work, but we'll try a few different ones and pick the one with the best performance
