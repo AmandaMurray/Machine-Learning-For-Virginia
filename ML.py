@@ -28,18 +28,17 @@ from sklearn.metrics import roc_curve #Remember to send the SVC.decision_functio
 
 
 ## Import, clean, prepare the data, look at the correlations
-    ## This is the point we're we'd be creating the "Busy-ness" feature
 
-database = pd.read_csv("database.csv")
-#print(database)
-
+#This is where we read in the original Database
+#database = pd.read_csv("databse.csv")
 #Creating feature that says how many murders were reported in the agency that year
+'''
 database['murders_that_year'] = 0
 this_agency = ""
 count = 1
 start_row = 0
 end_row = 0
-'''
+
 for index, row in database.iterrows():
     if (this_agency != row['Agency Name']):
         this_agency = row['Agency Name']
@@ -56,24 +55,49 @@ for index, row in database.iterrows():
         count = count +1
         end_row = end_row +1
 
+#Save the outputted database to a CSV.
 database.to_csv('out.csv')
-print("cool")
+print("finished")
+'''
+
+#Read in our newly created Database
+database = pd.read_csv('out.csv')
 #print(database)
-'''
-#Call the weird pandas thing that categorizes things factorize.
-'''
+non_cat_labels = ['Victim Age', 'murders_that_year', 'Year']
+database_only_cat = database.drop(labels = non_cat_labels, axis=1)
+database_numeric = database[non_cat_labels]
+#print(database_numeric)
+le = LabelEncoder
+oh = OneHotEncoder()
+for label in database_only_cat.columns:
+    database_only_cat[label] = le.fit_transform(y =database_only_cat[label], self= le)
+
+print(database_only_cat)
+for label in database_only_cat.columns:
+    oh.fit_transform(X =(database_only_cat[label].values).reshape(-1,1), handle_unknown='ignore',  self = oh)
+
+#print(database_only_cat)
+
+
+#print(database_only_cat)
+#Basic train-set splitting
 train_set, test_set = train_test_split(database, test_size = 0.2, random_state = 42)
 X_train = train_set.drop(columns=["Crime Solved"])
 y_train = train_set[['Crime Solved']]
 X_test = test_set.drop(columns=["Crime Solved",])
 y_test = test_set[['Crime Solved']]
 
+
+#Our pipeline.
+'''
 pipe = Pipeline([ ('imputer', Imputer( strategy ="median")),
                          ('std_scaler', StandardScaler()),])
 
 X_train = pipe.fit_transform(X_train)
 X_test = pipe.transform(X_test)
 
+'''
+'''
 ##Classification algorithm
     ##Try a linear SVC for a few C
 maxScore = 0;
